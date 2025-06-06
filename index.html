@@ -34,11 +34,21 @@
                  </select>
                  <input type="text" id="customTopic" class="custom-topic-input" placeholder="Enter your own topic..." style="display: none;">
              </div>
+             <div class="question-number-container">
+                 <label for="questionNumber" class="question-number-label">Number of Questions:</label>
+                 <select id="questionNumber" class="question-number-select">
+                     <option value="3">3</option>
+                     <option value="5" selected>5</option>
+                     <option value="7">7</option>
+                     <option value="10">10</option>
+                 </select>
+             </div>
              <button id="generateBtn" class="btn">Generate Quiz</button>
              <div id="quizContainer" class="quiz-frame" style="display: none;">
                  <h2 id="question" class="question-text"></h2>
                  <div id="options" class="options-grid"></div>
                  <div id="answerFeedback" class="answer-feedback" style="display: none;"></div>
+                 <div id="additionalInfo" class="additional-info" style="display: none;"></div>
                  <button id="nextBtn" class="btn btn-next" style="display: none;">Next</button>
              </div>
              <div id="result" class="result-box" style="display: none;"></div>
