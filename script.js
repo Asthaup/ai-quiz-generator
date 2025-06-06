@@ -1,10 +1,12 @@
 const generateBtn = document.getElementById('generateBtn');
      const topicSelect = document.getElementById('topic');
      const customTopicInput = document.getElementById('customTopic');
+     const questionNumberSelect = document.getElementById('questionNumber');
      const quizContainer = document.getElementById('quizContainer');
      const questionEl = document.getElementById('question');
      const optionsEl = document.getElementById('options');
      const answerFeedbackEl = document.getElementById('answerFeedback');
+     const additionalInfoEl = document.getElementById('additionalInfo');
      const nextBtn = document.getElementById('nextBtn');
      const resultEl = document.getElementById('result');
      const spinner = document.getElementById('spinner');
@@ -28,7 +30,7 @@ const generateBtn = document.getElementById('generateBtn');
              customTopicInput.style.display = 'none';
              customTopicInput.value = '';
              if (topic) {
-                 statusEl.innerText = `Topic selected: ${topic.charAt(0).toUpperCase() + topic.slice(1)}. Ready to generate quiz!`;
+                 statusEl.innerText = `Topic selected: ${topic.charAt(0).toUpperCase() + topic.slice(1)}. Choose number of questions!`;
                  statusEl.style.background = '#fef2f2';
                  statusEl.style.color = '#ff6f61';
              } else {
@@ -42,13 +44,23 @@ const generateBtn = document.getElementById('generateBtn');
      customTopicInput.addEventListener('input', () => {
          const customTopic = customTopicInput.value.trim();
          if (customTopic) {
-             statusEl.innerText = `Custom topic: ${customTopic}. Ready to generate quiz!`;
+             statusEl.innerText = `Custom topic: ${customTopic}. Choose number of questions!`;
              statusEl.style.background = '#fef2f2';
              statusEl.style.color = '#ff6f61';
          } else {
              statusEl.innerText = 'Enter your custom topic to start!';
              statusEl.style.background = '#e0f7fa';
              statusEl.style.color = '#0891b2';
+         }
+     });
+
+     questionNumberSelect.addEventListener('change', () => {
+         const topic = topicSelect.value === 'custom' ? customTopicInput.value.trim() : topicSelect.value;
+         const numQuestions = questionNumberSelect.value;
+         if (topic) {
+             statusEl.innerText = `Ready to generate a ${numQuestions}-question quiz on ${topic.charAt(0).toUpperCase() + topic.slice(1)}!`;
+             statusEl.style.background = '#fef2f2';
+             statusEl.style.color = '#ff6f61';
          }
      });
 
@@ -65,15 +77,16 @@ const generateBtn = document.getElementById('generateBtn');
              alert('Please select a topic!');
              return;
          }
-         console.log(`Generating quiz for topic: ${topic}`);
-         statusEl.innerText = `Generating quiz on ${topic.charAt(0).toUpperCase() + topic.slice(1)}...`;
+         const numQuestions = parseInt(questionNumberSelect.value);
+         console.log(`Generating quiz for topic: ${topic} with ${numQuestions} questions`);
+         statusEl.innerText = `Generating a ${numQuestions}-question quiz on ${topic.charAt(0).toUpperCase() + topic.slice(1)}...`;
          spinner.style.display = 'flex';
          quizContainer.style.display = 'none';
          resultEl.style.display = 'none';
          generateBtn.disabled = true;
 
          try {
-             quizData = await generateQuiz(topic);
+             quizData = await generateQuiz(topic, numQuestions);
              console.log("Quiz Data Generated:", quizData);
              userAnswers = new Array(quizData.length).fill(null);
              currentQuestionIndex = 0;
@@ -94,8 +107,8 @@ const generateBtn = document.getElementById('generateBtn');
          }
      });
 
-     async function generateQuiz(topic) {
-         const prompt = `Generate 5 multiple-choice trivia questions on ${topic}. Each question should have 4 options (A, B, C, D) and indicate the correct answer. Format each question as: "Question: [question text]\nA) [option A]\nB) [option B]\nC) [option C]\nD) [option D]\nCorrect: [A/B/C/D]"`;
+     async function generateQuiz(topic, numQuestions) {
+         const prompt = `Generate ${numQuestions} multiple-choice trivia questions on ${topic}. Each question should have 4 options (A, B, C, D), indicate the correct answer, and provide a short explanation (1-2 sentences) for the correct answer. Format each question as: "Question: [question text]\nA) [option A]\nB) [option B]\nC) [option C]\nD) [option D]\nCorrect: [A/B/C/D]\nExplanation: [explanation]"`;
 
          console.log("Sending API request with prompt:", prompt);
          const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -126,8 +139,9 @@ const generateBtn = document.getElementById('generateBtn');
              const question = lines[0].replace('Question: ', '');
              const options = lines.slice(1, 5);
              const correct = lines[5].replace('Correct: ', '');
+             const explanation = lines[6].replace('Explanation: ', '');
              const correctIndex = ['A', 'B', 'C', 'D'].indexOf(correct);
-             return { question, options, correct: correctIndex };
+             return { question, options, correct: correctIndex, explanation };
          });
 
          return quiz;
@@ -139,6 +153,7 @@ const generateBtn = document.getElementById('generateBtn');
          questionEl.innerText = `Question ${currentQuestionIndex + 1}: ${q.question}`;
          optionsEl.innerHTML = '';
          answerFeedbackEl.style.display = 'none';
+         additionalInfoEl.style.display = 'none';
          isAnswerSelected = false;
          q.options.forEach((option, index) => {
              const label = document.createElement('label');
@@ -149,7 +164,7 @@ const generateBtn = document.getElementById('generateBtn');
          nextBtn.disabled = true;
          document.querySelectorAll('input[name="answer"]').forEach(input => {
              input.addEventListener('change', () => {
-                 if (isAnswerSelected) return; // Prevent multiple selections
+                 if (isAnswerSelected) return;
                  isAnswerSelected = true;
                  nextBtn.disabled = false;
                  userAnswers[currentQuestionIndex] = parseInt(input.value);
@@ -159,13 +174,15 @@ const generateBtn = document.getElementById('generateBtn');
                  selectedLabel.classList.add(isCorrect ? 'correct' : 'incorrect');
                  if (!isCorrect) {
                      correctLabel.classList.add('correct');
-                 }
-                 answerFeedbackEl.innerText = isCorrect ? '🎉 Amazing! That’s correct!' : 'Oops! That’s incorrect. The correct answer is highlighted.';
-                 answerFeedbackEl.classList.add(isCorrect ? 'correct' : 'incorrect');
-                 answerFeedbackEl.style.display = 'block';
-                 if (isCorrect) {
+                     answerFeedbackEl.innerText = `Oops! The correct answer is ${q.options[q.correct]}. Don’t give up—you’ve got this! 💪`;
+                 } else {
+                     answerFeedbackEl.innerText = '🎉 Amazing! That’s correct!';
                      createConfetti();
                  }
+                 answerFeedbackEl.classList.add(isCorrect ? 'correct' : 'incorrect');
+                 answerFeedbackEl.style.display = 'block';
+                 additionalInfoEl.innerText = `Did you know? ${q.explanation}`;
+                 additionalInfoEl.style.display = 'block';
                  statusEl.innerText = `Answer selected for Question ${currentQuestionIndex + 1}/${quizData.length}. ${isCorrect ? 'Well done!' : 'Let’s try the next one!'}`;
                  statusEl.style.background = isCorrect ? '#d1fae5' : '#fee2e2';
                  statusEl.style.color = isCorrect ? '#065f46' : '#991b1b';
@@ -180,12 +197,12 @@ const generateBtn = document.getElementById('generateBtn');
      }
 
      function createConfetti() {
-         for (let i = 0; i < 50; i++) {
+         confettiContainer.innerHTML = ''; // Clear previous confetti
+         for (let i = 0; i < 30; i++) { // Reduced number for a shorter burst
              const confetti = document.createElement('div');
              confetti.classList.add('confetti');
              confetti.style.left = Math.random() * 100 + 'vw';
-             confetti.style.animationDelay = Math.random() * 3 + 's';
-             confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+             confetti.style.animationDelay = Math.random() * 0.5 + 's';
              confettiContainer.appendChild(confetti);
          }
      }
@@ -229,6 +246,7 @@ const generateBtn = document.getElementById('generateBtn');
              topicSelect.value = '';
              customTopicInput.style.display = 'none';
              customTopicInput.value = '';
+             questionNumberSelect.value = '5';
              statusEl.innerText = 'Ready to start! Select or enter a topic below.';
              statusEl.style.background = '#e0f7fa';
              statusEl.style.color = '#0891b2';
