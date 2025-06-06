@@ -67,7 +67,7 @@ const generateBtn = document.getElementById('generateBtn');
          const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
              method: "POST",
              headers: {
-                 "Authorization": "Bearer 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",
+                 "Authorization": "Bearer YOUR_API_KEY",
                  "Content-Type": "application/json",
                  "HTTP-Referer": "https://chat.openrouter.ai",
                  "X-Title": "ai-quiz-generator-project"
