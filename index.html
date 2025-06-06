@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+     <html lang="en">
+     <head>
+         <meta charset="UTF-8">
+         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+         <title>AI Quiz Generator</title>
+         <link rel="stylesheet" href="styles.css">
+         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+     </head>
+     <body>
+         <div class="container">
+             <h1 class="title">✨ AI Quiz Generator ✨</h1>
+             <p class="subtitle">Pick a topic and challenge yourself with a trivia quiz!</p>
+             <div class="status" id="status">Ready to start! Select a topic below.</div>
+             <select id="topic" class="topic-select">
+                 <option value="">Select a topic</option>
+                 <option value="history">History</option>
+                 <option value="science">Science</option>
+                 <option value="movies">Movies</option>
+                 <option value="geography">Geography</option>
+                 <option value="literature">Literature</option>
+                 <option value="sports">Sports</option>
+                 <option value="music">Music</option>
+                 <option value="technology">Technology</option>
+                 <option value="art">Art</option>
+                 <option value="food">Food & Cuisine</option>
+             </select>
+             <button id="generateBtn" class="btn">Generate Quiz</button>
+             <div id="quizContainer" class="quiz-frame" style="display: none;">
+                 <h2 id="question" class="question-text"></h2>
+                 <div id="options" class="options-grid"></div>
+                 <button id="nextBtn" class="btn btn-next" style="display: none;">Next</button>
+             </div>
+             <div id="result" class="result-box" style="display: none;"></div>
+             <div id="spinner" class="spinner" style="display: none;">
+                 <div class="loader"></div>
+                 <p>Loading your quiz...</p>
+             </div>
+         </div>
+         <script src="script.js"></script>
+     </body>
+     </html>
