@@ -1,32 +1,66 @@
 const generateBtn = document.getElementById('generateBtn');
      const topicSelect = document.getElementById('topic');
+     const customTopicInput = document.getElementById('customTopic');
      const quizContainer = document.getElementById('quizContainer');
      const questionEl = document.getElementById('question');
      const optionsEl = document.getElementById('options');
+     const answerFeedbackEl = document.getElementById('answerFeedback');
      const nextBtn = document.getElementById('nextBtn');
      const resultEl = document.getElementById('result');
      const spinner = document.getElementById('spinner');
      const statusEl = document.getElementById('status');
+     const confettiContainer = document.getElementById('confetti-container');
 
      let currentQuestionIndex = 0;
      let quizData = [];
      let userAnswers = [];
+     let isAnswerSelected = false;
 
      topicSelect.addEventListener('change', () => {
          const topic = topicSelect.value;
-         if (topic) {
-             statusEl.innerText = `Topic selected: ${topic.charAt(0).toUpperCase() + topic.slice(1)}. Ready to generate quiz!`;
-             statusEl.style.background = '#fff1f2';
-             statusEl.style.color = '#ff4757';
+         if (topic === 'custom') {
+             customTopicInput.style.display = 'block';
+             customTopicInput.focus();
+             statusEl.innerText = 'Enter your custom topic to start!';
+             statusEl.style.background = '#e0f7fa';
+             statusEl.style.color = '#0891b2';
          } else {
-             statusEl.innerText = 'Ready to start! Select a topic below.';
-             statusEl.style.background = '#f0f4ff';
-             statusEl.style.color = '#2f54eb';
+             customTopicInput.style.display = 'none';
+             customTopicInput.value = '';
+             if (topic) {
+                 statusEl.innerText = `Topic selected: ${topic.charAt(0).toUpperCase() + topic.slice(1)}. Ready to generate quiz!`;
+                 statusEl.style.background = '#fef2f2';
+                 statusEl.style.color = '#ff6f61';
+             } else {
+                 statusEl.innerText = 'Ready to start! Select or enter a topic below.';
+                 statusEl.style.background = '#e0f7fa';
+                 statusEl.style.color = '#0891b2';
+             }
+         }
+     });
+
+     customTopicInput.addEventListener('input', () => {
+         const customTopic = customTopicInput.value.trim();
+         if (customTopic) {
+             statusEl.innerText = `Custom topic: ${customTopic}. Ready to generate quiz!`;
+             statusEl.style.background = '#fef2f2';
+             statusEl.style.color = '#ff6f61';
+         } else {
+             statusEl.innerText = 'Enter your custom topic to start!';
+             statusEl.style.background = '#e0f7fa';
+             statusEl.style.color = '#0891b2';
          }
      });
 
      generateBtn.addEventListener('click', async () => {
-         const topic = topicSelect.value;
+         let topic = topicSelect.value;
+         if (topic === 'custom') {
+             topic = customTopicInput.value.trim();
+             if (!topic) {
+                 alert('Please enter a custom topic!');
+                 return;
+             }
+         }
          if (!topic) {
              alert('Please select a topic!');
              return;
@@ -52,8 +86,8 @@ const generateBtn = document.getElementById('generateBtn');
              console.error("Error generating quiz:", error);
              spinner.style.display = 'none';
              statusEl.innerText = 'Error generating quiz. Check your API key or internet.';
-             statusEl.style.background = '#fff1f2';
-             statusEl.style.color = '#ff4757';
+             statusEl.style.background = '#fef2f2';
+             statusEl.style.color = '#ff6f61';
              resultEl.innerText = 'Error generating quiz. Check your API key or internet.';
              resultEl.style.display = 'block';
              generateBtn.disabled = false;
@@ -104,6 +138,8 @@ const generateBtn = document.getElementById('generateBtn');
          console.log("Displaying Question:", q);
          questionEl.innerText = `Question ${currentQuestionIndex + 1}: ${q.question}`;
          optionsEl.innerHTML = '';
+         answerFeedbackEl.style.display = 'none';
+         isAnswerSelected = false;
          q.options.forEach((option, index) => {
              const label = document.createElement('label');
              label.innerHTML = `<input type="radio" name="answer" value="${index}"> <span>${option}</span><br>`;
@@ -113,25 +149,53 @@ const generateBtn = document.getElementById('generateBtn');
          nextBtn.disabled = true;
          document.querySelectorAll('input[name="answer"]').forEach(input => {
              input.addEventListener('change', () => {
+                 if (isAnswerSelected) return; // Prevent multiple selections
+                 isAnswerSelected = true;
                  nextBtn.disabled = false;
                  userAnswers[currentQuestionIndex] = parseInt(input.value);
-                 statusEl.innerText = `Answer selected for Question ${currentQuestionIndex + 1}/${quizData.length}. Click Next to continue.`;
-                 statusEl.style.background = '#f0f4ff';
-                 statusEl.style.color = '#2f54eb';
+                 const isCorrect = userAnswers[currentQuestionIndex] === q.correct;
+                 const selectedLabel = input.parentElement;
+                 const correctLabel = optionsEl.children[q.correct];
+                 selectedLabel.classList.add(isCorrect ? 'correct' : 'incorrect');
+                 if (!isCorrect) {
+                     correctLabel.classList.add('correct');
+                 }
+                 answerFeedbackEl.innerText = isCorrect ? '🎉 Amazing! That’s correct!' : 'Oops! That’s incorrect. The correct answer is highlighted.';
+                 answerFeedbackEl.classList.add(isCorrect ? 'correct' : 'incorrect');
+                 answerFeedbackEl.style.display = 'block';
+                 if (isCorrect) {
+                     createConfetti();
+                 }
+                 statusEl.innerText = `Answer selected for Question ${currentQuestionIndex + 1}/${quizData.length}. ${isCorrect ? 'Well done!' : 'Let’s try the next one!'}`;
+                 statusEl.style.background = isCorrect ? '#d1fae5' : '#fee2e2';
+                 statusEl.style.color = isCorrect ? '#065f46' : '#991b1b';
                  document.querySelectorAll('#options label span').forEach(span => {
-                     span.style.color = '#333';
+                     span.style.color = '#374151';
                      span.style.fontWeight = 'normal';
                  });
-                 input.nextElementSibling.style.color = '#ff4757';
+                 input.nextElementSibling.style.color = isCorrect ? '#065f46' : '#991b1b';
                  input.nextElementSibling.style.fontWeight = '600';
              });
          });
+     }
+
+     function createConfetti() {
+         for (let i = 0; i < 50; i++) {
+             const confetti = document.createElement('div');
+             confetti.classList.add('confetti');
+             confetti.style.left = Math.random() * 100 + 'vw';
+             confetti.style.animationDelay = Math.random() * 3 + 's';
+             confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+             confettiContainer.appendChild(confetti);
+         }
      }
 
      nextBtn.addEventListener('click', () => {
          currentQuestionIndex++;
          if (currentQuestionIndex < quizData.length) {
              statusEl.innerText = `You're on Question ${currentQuestionIndex + 1}/${quizData.length}.`;
+             statusEl.style.background = '#e0f7fa';
+             statusEl.style.color = '#0891b2';
              displayQuestion();
          } else {
              showResult();
@@ -145,21 +209,29 @@ const generateBtn = document.getElementById('generateBtn');
          quizData.forEach((q, index) => {
              if (userAnswers[index] === q.correct) score++;
          });
-         resultEl.innerHTML = `You scored ${score}/${quizData.length}! `;
-         if (score === quizData.length) resultEl.innerHTML += 'Perfect score! 🎉';
-         else if (score >= Math.floor(quizData.length * 0.6)) resultEl.innerHTML += 'Great job! 😊';
-         else resultEl.innerHTML += 'Nice try! Keep practicing! 💪';
-         resultEl.innerHTML += '<br><button id="playAgain" class="btn">Play Again</button>';
+         let resultMessage = `You scored ${score}/${quizData.length}! `;
+         if (score === quizData.length) {
+             resultMessage += 'Perfect score! You’re a trivia master! 🏆';
+             createConfetti();
+         } else if (score >= Math.floor(quizData.length * 0.6)) {
+             resultMessage += 'Great job! You’re on fire! 🔥';
+         } else {
+             resultMessage += 'Nice try! Keep practicing to become a trivia champ! 💪';
+         }
+         resultEl.innerHTML = resultMessage + '<br><button id="playAgain" class="btn">Play Again</button>';
          resultEl.style.display = 'block';
          statusEl.innerText = `Quiz completed! Your score: ${score}/${quizData.length}. Play again?`;
-         statusEl.style.background = '#fff1f2';
-         statusEl.style.color = '#ff4757';
+         statusEl.style.background = score === quizData.length ? '#d1fae5' : '#fef2f2';
+         statusEl.style.color = score === quizData.length ? '#065f46' : '#ff6f61';
          document.getElementById('playAgain').addEventListener('click', () => {
              quizContainer.style.display = 'none';
              resultEl.style.display = 'none';
              topicSelect.value = '';
-             statusEl.innerText = 'Ready to start! Select a topic below.';
-             statusEl.style.background = '#f0f4ff';
-             statusEl.style.color = '#2f54eb';
+             customTopicInput.style.display = 'none';
+             customTopicInput.value = '';
+             statusEl.innerText = 'Ready to start! Select or enter a topic below.';
+             statusEl.style.background = '#e0f7fa';
+             statusEl.style.color = '#0891b2';
+             confettiContainer.innerHTML = '';
          });
      }
