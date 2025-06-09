@@ -1,99 +1,101 @@
 <!DOCTYPE html>
-     <html lang="en">
-     <head>
-         <meta charset="UTF-8">
-         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-         <title>AI Quiz Generator</title>
-         <link rel="stylesheet" href="styles.css">
-         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-     </head>
-     <body>
-         <div class="container">
-             <div id="profileSetup" class="profile-setup">
-                 <h2 class="profile-title">Welcome to AI Quiz Generator! 🎉</h2>
-                 <p class="profile-subtitle">Let’s get to know you!</p>
-                 <div class="profile-form">
-                     <input type="text" id="userName" class="profile-input" placeholder="Your Name" required>
-                     <select id="preferredTopic" class="profile-select">
-                         <option value="">Preferred Topic (Optional)</option>
-                         <option value="history">History</option>
-                         <option value="science">Science</option>
-                         <option value="movies">Movies</option>
-                         <option value="geography">Geography</option>
-                         <option value="literature">Literature</option>
-                         <option value="sports">Sports</option>
-                         <option value="music">Music</option>
-                         <option value="technology">Technology</option>
-                         <option value="art">Art</option>
-                         <option value="food">Food & Cuisine</option>
-                         <option value="astronomy">Astronomy</option>
-                         <option value="mythology">Mythology</option>
-                         <option value="fashion">Fashion</option>
-                         <option value="wildlife">Wildlife</option>
-                         <option value="travel">Travel</option>
-                     </select>
-                     <button id="saveProfileBtn" class="btn">Start Quizzing!</button>
-                 </div>
-             </div>
-             <div id="mainContent" style="display: none;">
-                 <h1 class="title">✨ AI Quiz Generator ✨</h1>
-                 <p class="subtitle">Challenge yourself with a trivia quiz, <span id="userGreeting"></span>!</p>
-                 <div class="profile-stats">
-                     <p id="userStats" class="stats-text"></p>
-                     <button id="editProfileBtn" class="btn btn-small">Edit Profile</button>
-                 </div>
-                 <div class="status" id="status">Ready to start! Select or enter a topic below.</div>
-                 <div class="topic-container">
-                     <select id="topic" class="topic-select">
-                         <option value="">Select a topic</option>
-                         <option value="history">History</option>
-                         <option value="science">Science</option>
-                         <option value="movies">Movies</option>
-                         <option value="geography">Geography</option>
-                         <option value="literature">Literature</option>
-                         <option value="sports">Sports</option>
-                         <option value="music">Music</option>
-                         <option value="technology">Technology</option>
-                         <option value="art">Art</option>
-                         <option value="food">Food & Cuisine</option>
-                         <option value="astronomy">Astronomy</option>
-                         <option value="mythology">Mythology</option>
-                         <option value="fashion">Fashion</option>
-                         <option value="wildlife">Wildlife</option>
-                         <option value="travel">Travel</option>
-                         <option value="custom">Custom Topic</option>
-                     </select>
-                     <input type="text" id="customTopic" class="custom-topic-input" placeholder="Enter your own topic..." style="display: none;">
-                 </div>
-                 <div class="question-number-container">
-                     <label for="questionNumber" class="question-number-label">Number of Questions:</label>
-                     <select id="questionNumber" class="question-number-select">
-                         <option value="3">3</option>
-                         <option value="5" selected>5</option>
-                         <option value="7">7</option>
-                         <option value="10">10</option>
-                     </select>
-                 </div>
-                 <button id="generateBtn" class="btn">Generate Quiz</button>
-                 <div id="quizContainer" class="quiz-frame" style="display: none;">
-                     <h2 id="question" class="question-text"></h2>
-                     <div class="lifelines">
-                         <button id="hintBtn" class="btn btn-lifeline">Hint (<span id="hintCount">1</span>)</button>
-                         <button id="fiftyFiftyBtn" class="btn btn-lifeline">50/50 (<span id="fiftyFiftyCount">1</span>)</button>
-                     </div>
-                     <div id="options" class="options-grid"></div>
-                     <div id="answerFeedback" class="answer-feedback" style="display: none;"></div>
-                     <div id="additionalInfo" class="additional-info" style="display: none;"></div>
-                     <button id="nextBtn" class="btn btn-next" style="display: none;">Next</button>
-                 </div>
-                 <div id="result" class="result-box" style="display: none;"></div>
-                 <div id="spinner" class="spinner" style="display: none;">
-                     <div class="loader"></div>
-                     <p>Loading your quiz...</p>
-                 </div>
-                 <div id="confetti-container" class="confetti-container"></div>
-             </div>
-         </div>
-         <script src="script.js"></script>
-     </body>
-     </html> 
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Quiz Generator</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div id="profileSetup" class="profile-setup">
+            <h2 class="profile-title">Welcome to AI Quiz Generator! 🎉</h2>
+            <p class="profile-subtitle">Let’s get to know you!</p>
+            <div class="profile-form">
+                <input type="text" id="userName" class="profile-input" placeholder="Your Name" required>
+                <select id="preferredTopic" class="profile-select">
+                    <option value="">Preferred Topic (Optional)</option>
+                    <option value="history">History</option>
+                    <option value="science">Science</option>
+                    <option value="movies">Movies</option>
+                    <option value="geography">Geography</option>
+                    <option value="literature">Literature</option>
+                    <option value="sports">Sports</option>
+                    <option value="music">Music</option>
+                    <option value="technology">Technology</option>
+                    <option value="art">Art</option>
+                    <option value="food">Food & Cuisine</option>
+                    <option value="astronomy">Astronomy</option>
+                    <option value="mythology">Mythology</option>
+                    <option value="fashion">Fashion</option>
+                    <option value="wildlife">Wildlife</option>
+                    <option value="travel">Travel</option>
+                </select>
+                <button id="saveProfileBtn" class="btn">Start Quizzing!</button>
+            </div>
+        </div>
+        <div id="mainContent" style="display: none;">
+            <h1 class="title">✨ AI Quiz Generator ✨</h1>
+            <p class="subtitle">Challenge yourself with a trivia quiz, <span id="userGreeting"></span>!</p>
+            <div class="profile-stats">
+                <p id="userStats" class="stats-text"></p>
+                <button id="editProfileBtn" class="btn btn-small">Edit Profile</button>
+            </div>
+            <div class="status" id="status">Ready to start! Select or enter a topic below.</div>
+            <div class="topic-container">
+                <select id="topic" class="topic-select">
+                    <option value="">Select a topic</option>
+                    <option value="history">History</option>
+                    <option value="science">Science</option>
+                    <option value="movies">Movies</option>
+                    <option value="geography">Geography</option>
+                    <option value="literature">Literature</option>
+                    <option value="sports">Sports</option>
+                    <option value="music">Music</option>
+                    <option value="technology">Technology</option>
+                    <option value="art">Art</option>
+                    <option value="food">Food & Cuisine</option>
+                    <option value="astronomy">Astronomy</option>
+                    <option value="mythology">Mythology</option>
+                    <option value="fashion">Fashion</option>
+                    <option value="wildlife">Wildlife</option>
+                    <option value="travel">Travel</option>
+                    <option value="custom">Custom Topic</option>
+                </select>
+                <input type="text" id="customTopic" class="custom-topic-input" placeholder="Enter your own topic..." style="display: none;">
+            </div>
+            <div class="question-number-container">
+                <label for="questionNumber" class="question-number-label">Number of Questions:</label>
+                <select id="questionNumber" class="question-number-select">
+                    <option value="3">3</option>
+                    <option value="5" selected>5</option>
+                    <option value="7">7</option>
+                    <option value="10">10</option>
+                </select>
+            </div>
+            <button id="generateBtn" class="btn">Generate Quiz</button>
+            <div id="quizContainer" class="quiz-frame" style="display: none;">
+                <h2 id="question" class="question-text"></h2>
+                <div id="timer" class="timer" style="display: none;">Time Left: <span id="timeLeft">15</span>s</div>
+                <div class="lifelines">
+                    <button id="hintBtn" class="btn btn-lifeline">Hint (<span id="hintCount">1</span>)</button>
+                    <button id="fiftyFiftyBtn" class="btn btn-lifeline">50/50 (<span id="fiftyFiftyCount">1</span>)</button>
+                </div>
+                <div id="options" class="options-grid"></div>
+                <div id="answerFeedback" class="answer-feedback" style="display: none;"></div>
+                <div id="additionalInfo" class="additional-info" style="display: none;"></div>
+                <button id="nextBtn" class="btn btn-next" style="display: none;">Next</button>
+            </div>
+            <div id="result" class="result-box" style="display: none;"></div>
+            <div id="spinner" class="spinner" style="display: none;">
+                <div class="loader"></div>
+                <p>Loading your quiz...</p>
+            </div>
+            <div id="confetti-container" class="confetti-container"></div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
