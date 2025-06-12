@@ -1,4 +1,3 @@
-// DOM Elements
 const profileSetup = document.getElementById('profileSetup');
 const mainContent = document.getElementById('mainContent');
 const saveProfileBtn = document.getElementById('saveProfileBtn');
@@ -7,6 +6,7 @@ const userNameInput = document.getElementById('userName');
 const preferredTopicSelect = document.getElementById('preferredTopic');
 const userGreeting = document.getElementById('userGreeting');
 const userStats = document.getElementById('userStats');
+const badgesEl = document.getElementById('badges'); // New element for badges
 const generateBtn = document.getElementById('generateBtn');
 const topicSelect = document.getElementById('topic');
 const customTopicInput = document.getElementById('customTopic');
@@ -33,7 +33,7 @@ let quizData = [];
 let userAnswers = [];
 let isAnswerSelected = false;
 let timer;
-let timeLeft = 15; // 15 seconds per question
+let timeLeft = 15;
 let hintCount = 1;
 let fiftyFiftyCount = 1;
 let userProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
@@ -57,7 +57,8 @@ saveProfileBtn.addEventListener('click', () => {
         preferredTopic, 
         quizHistory: userProfile.quizHistory || [], 
         streak: userProfile.streak || 0, 
-        highScore: userProfile.highScore || 0, // Added for high score tracking
+        highScore: userProfile.highScore || 0,
+        badges: userProfile.badges || [], // Initialize badges array
         lastQuizDate: userProfile.lastQuizDate || null 
     };
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
@@ -92,6 +93,15 @@ function updateProfileDisplay() {
     userProfile.streak = streak;
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
     userStats.innerText = `Quizzes Taken: ${totalQuizzes} | Avg Score: ${averageScore}% | High Score: ${userProfile.highScore}/${questionNumberSelect.value} | Streak: ${streak} day${streak !== 1 ? 's' : ''}`;
+    
+    // Display badges
+    badgesEl.innerHTML = '<strong>Achievements:</strong> ';
+    if (userProfile.badges && userProfile.badges.length > 0) {
+        badgesEl.innerHTML += userProfile.badges.map(badge => `<span class="badge">${badge}</span>`).join(' ');
+    } else {
+        badgesEl.innerHTML += 'No badges yet! Take a quiz to earn some! 🏅';
+    }
+
     if (topicSelect.value) {
         statusEl.innerText = `Topic selected: ${topicSelect.value.charAt(0).toUpperCase() + topicSelect.value.slice(1)}. Choose number of questions!`;
         statusEl.style.background = '#fef2f2';
@@ -143,7 +153,7 @@ questionNumberSelect.addEventListener('change', () => {
         statusEl.style.background = '#fef2f2';
         statusEl.style.color = '#ff6f61';
     }
-    updateProfileDisplay(); // Update high score display based on selected number of questions
+    updateProfileDisplay();
 });
 
 generateBtn.addEventListener('click', async () => {
@@ -202,7 +212,7 @@ async function generateQuiz(topic, numQuestions) {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
-            "Authorization": "Bearer YOUR_API_KEYS",
+            "Authorization": "Bearer YOUR_API_KEY",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://chat.openrouter.ai",
             "X-Title": "ai-quiz-generator-project"
@@ -236,7 +246,6 @@ async function generateQuiz(topic, numQuestions) {
     return quiz;
 }
 
-// Timer Logic
 function startTimer() {
     timeLeft = 15;
     timeLeftEl.innerText = timeLeft;
@@ -248,7 +257,7 @@ function startTimer() {
         if (timeLeft <= 0) {
             clearInterval(timer);
             timerEl.style.display = 'none';
-            userAnswers[currentQuestionIndex] = null; // Mark as unanswered (incorrect)
+            userAnswers[currentQuestionIndex] = null;
             const q = quizData[currentQuestionIndex];
             const correctLabel = optionsEl.children[q.correct];
             correctLabel.classList.add('correct');
@@ -378,6 +387,40 @@ nextBtn.addEventListener('click', () => {
     }, 1000);
 });
 
+// Function to award badges based on user achievements
+function awardBadges(score, totalQuestions) {
+    const badges = userProfile.badges || [];
+    const history = userProfile.quizHistory || [];
+    
+    // Badge: First Quiz Master (complete first quiz)
+    if (history.length === 0 && !badges.includes('First Quiz Master 🏆')) {
+        badges.push('First Quiz Master 🏆');
+        statusEl.innerText = `🎉 Wow, ${userProfile.name}! You earned the "First Quiz Master" badge!`;
+        statusEl.style.background = '#d1fae5';
+        statusEl.style.color = '#065f46';
+    }
+    
+    // Badge: Perfect Score Pro (get a perfect score)
+    if (score === totalQuestions && !badges.includes('Perfect Score Pro 🌟')) {
+        badges.push('Perfect Score Pro 🌟');
+        statusEl.innerText = `🌟 Amazing, ${userProfile.name}! You earned the "Perfect Score Pro" badge!`;
+        statusEl.style.background = '#d1fae5';
+        statusEl.style.color = '#065f46';
+    }
+    
+    // Badge: Streak Star (achieve a 3-day streak)
+    if (userProfile.streak >= 3 && !badges.includes('Streak Star 🔥')) {
+        badges.push('Streak Star 🔥');
+        statusEl.innerText = `🔥 Incredible, ${userProfile.name}! You earned the "Streak Star" badge for a ${userProfile.streak}-day streak!`;
+        statusEl.style.background = '#d1fae5';
+        statusEl.style.color = '#065f46';
+    }
+    
+    userProfile.badges = badges;
+    localStorage.setItem('userProfile', JSON.stringify(userProfile));
+    updateProfileDisplay();
+}
+
 function showResult() {
     quizContainer.style.display = 'none';
     nextBtn.style.display = 'none';
@@ -396,22 +439,45 @@ function showResult() {
     if (score > userProfile.highScore) {
         userProfile.highScore = score;
     }
+    
+    // Award badges based on performance
+    awardBadges(score, quizData.length);
+    
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
     updateProfileDisplay();
-    let resultMessage = `You scored ${score}/${quizData.length}! `;
+    
+    // Personalized encouragement message
+    let resultMessage = `You scored ${score}/${quizData.length}, ${userProfile.name}! `;
+    let encouragementMessage = '';
     if (score === quizData.length) {
         resultMessage += 'Perfect score! You’re a trivia master! 🏆';
+        encouragementMessage = `Wow, ${userProfile.name}, you’re unstoppable! Come back tomorrow to keep your streak alive and earn more badges! 🌟`;
         createConfetti();
     } else if (score >= Math.floor(quizData.length * 0.6)) {
         resultMessage += 'Great job! You’re on fire! 🔥';
+        encouragementMessage = `Nice work, ${userProfile.name}! You’re getting better every time—try again tomorrow to beat your high score! 🚀`;
     } else {
         resultMessage += 'Nice try! Keep practicing to become a trivia champ! 💪';
+        encouragementMessage = `Don’t worry, ${userProfile.name}! Every quiz makes you stronger—come back tomorrow for a fresh challenge! 🌈`;
     }
-    resultEl.innerHTML = resultMessage + '<br><button id="playAgain" class="btn">Play Again</button>';
+    
+    // Shareable result
+    const topic = topicSelect.value === 'custom' ? customTopicInput.value : topicSelect.value;
+    const shareText = `I scored ${score}/${quizData.length} on a ${topic} quiz in AI Quiz Generator! Can you beat me? 🚀 Play now: https://github.com/YOUR_USERNAME/ai-quiz-generator`;
+    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+    
+    resultEl.innerHTML = `${resultMessage}<br><p>${encouragementMessage}</p><br>` +
+        `<button id="shareResult" class="btn btn-share">Share Your Score</button><br>` +
+        `<button id="playAgain" class="btn">Play Again</button>`;
     resultEl.style.display = 'block';
-    statusEl.innerText = `Quiz completed! Your score: ${score}/${quizData.length}. Play again?`;
+    statusEl.innerText = `Quiz completed! Your score: ${score}/${quizData.length}. ${encouragementMessage}`;
     statusEl.style.background = score === quizData.length ? '#d1fae5' : '#fef2f2';
     statusEl.style.color = score === quizData.length ? '#065f46' : '#ff6f61';
+    
+    document.getElementById('shareResult').addEventListener('click', () => {
+        window.open(shareUrl, '_blank');
+    });
+    
     document.getElementById('playAgain').addEventListener('click', () => {
         quizContainer.style.display = 'none';
         resultEl.style.display = 'none';
