@@ -1,493 +1,311 @@
-const profileSetup = document.getElementById('profileSetup');
-const mainContent = document.getElementById('mainContent');
-const saveProfileBtn = document.getElementById('saveProfileBtn');
-const editProfileBtn = document.getElementById('editProfileBtn');
-const userNameInput = document.getElementById('userName');
-const preferredTopicSelect = document.getElementById('preferredTopic');
-const userGreeting = document.getElementById('userGreeting');
-const userStats = document.getElementById('userStats');
-const badgesEl = document.getElementById('badges'); // New element for badges
-const generateBtn = document.getElementById('generateBtn');
-const topicSelect = document.getElementById('topic');
-const customTopicInput = document.getElementById('customTopic');
-const questionNumberSelect = document.getElementById('questionNumber');
-const quizContainer = document.getElementById('quizContainer');
-const questionEl = document.getElementById('question');
-const timerEl = document.getElementById('timer');
-const timeLeftEl = document.getElementById('timeLeft');
-const optionsEl = document.getElementById('options');
-const answerFeedbackEl = document.getElementById('answerFeedback');
-const additionalInfoEl = document.getElementById('additionalInfo');
-const nextBtn = document.getElementById('nextBtn');
-const hintBtn = document.getElementById('hintBtn');
-const fiftyFiftyBtn = document.getElementById('fiftyFiftyBtn');
-const hintCountEl = document.getElementById('hintCount');
-const fiftyFiftyCountEl = document.getElementById('fiftyFiftyCount');
-const resultEl = document.getElementById('result');
-const spinner = document.getElementById('spinner');
-const statusEl = document.getElementById('status');
-const confettiContainer = document.getElementById('confetti-container');
-
-let currentQuestionIndex = 0;
-let quizData = [];
-let userAnswers = [];
-let isAnswerSelected = false;
-let timer;
-let timeLeft = 15;
-let hintCount = 1;
-let fiftyFiftyCount = 1;
-let userProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
-
-// Initialize app state based on profile
-if (userProfile.name) {
-    profileSetup.style.display = 'none';
-    mainContent.style.display = 'block';
-    updateProfileDisplay();
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 50%, #80deea 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #333;
 }
 
-saveProfileBtn.addEventListener('click', () => {
-    const name = userNameInput.value.trim();
-    const preferredTopic = preferredTopicSelect.value;
-    if (!name) {
-        alert('Please enter your name!');
-        return;
-    }
-    userProfile = { 
-        name, 
-        preferredTopic, 
-        quizHistory: userProfile.quizHistory || [], 
-        streak: userProfile.streak || 0, 
-        highScore: userProfile.highScore || 0,
-        badges: userProfile.badges || [], // Initialize badges array
-        lastQuizDate: userProfile.lastQuizDate || null 
-    };
-    localStorage.setItem('userProfile', JSON.stringify(userProfile));
-    profileSetup.style.display = 'none';
-    mainContent.style.display = 'block';
-    updateProfileDisplay();
-});
-
-editProfileBtn.addEventListener('click', () => {
-    mainContent.style.display = 'none';
-    profileSetup.style.display = 'block';
-    userNameInput.value = userProfile.name;
-    preferredTopicSelect.value = userProfile.preferredTopic || '';
-});
-
-function updateProfileDisplay() {
-    userGreeting.innerText = userProfile.name;
-    topicSelect.value = userProfile.preferredTopic || '';
-    const history = userProfile.quizHistory || [];
-    const totalQuizzes = history.length;
-    const averageScore = totalQuizzes ? (history.reduce((sum, quiz) => sum + quiz.score, 0) / totalQuizzes).toFixed(1) : 0;
-    const today = new Date().toDateString();
-    const lastQuizDate = userProfile.lastQuizDate || today;
-    let streak = userProfile.streak || 0;
-    if (lastQuizDate !== today) {
-        const lastDate = new Date(lastQuizDate);
-        const todayDate = new Date(today);
-        const diffDays = (todayDate - lastDate) / (1000 * 60 * 60 * 24);
-        if (diffDays === 1) streak++;
-        else if (diffDays > 1) streak = 0;
-    }
-    userProfile.streak = streak;
-    localStorage.setItem('userProfile', JSON.stringify(userProfile));
-    userStats.innerText = `Quizzes Taken: ${totalQuizzes} | Avg Score: ${averageScore}% | High Score: ${userProfile.highScore}/${questionNumberSelect.value} | Streak: ${streak} day${streak !== 1 ? 's' : ''}`;
-    
-    // Display badges
-    badgesEl.innerHTML = '<strong>Achievements:</strong> ';
-    if (userProfile.badges && userProfile.badges.length > 0) {
-        badgesEl.innerHTML += userProfile.badges.map(badge => `<span class="badge">${badge}</span>`).join(' ');
-    } else {
-        badgesEl.innerHTML += 'No badges yet! Take a quiz to earn some! 🏅';
-    }
-
-    if (topicSelect.value) {
-        statusEl.innerText = `Topic selected: ${topicSelect.value.charAt(0).toUpperCase() + topicSelect.value.slice(1)}. Choose number of questions!`;
-        statusEl.style.background = '#fef2f2';
-        statusEl.style.color = '#ff6f61';
-    }
+.container {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    max-width: 700px;
+    width: 100%;
+    text-align: center;
 }
 
-topicSelect.addEventListener('change', () => {
-    const topic = topicSelect.value;
-    if (topic === 'custom') {
-        customTopicInput.style.display = 'block';
-        customTopicInput.focus();
-        statusEl.innerText = 'Enter your custom topic to start!';
-        statusEl.style.background = '#e0f7fa';
-        statusEl.style.color = '#0891b2';
-    } else {
-        customTopicInput.style.display = 'none';
-        customTopicInput.value = '';
-        if (topic) {
-            statusEl.innerText = `Topic selected: ${topic.charAt(0).toUpperCase() + topic.slice(1)}. Choose number of questions!`;
-            statusEl.style.background = '#fef2f2';
-            statusEl.style.color = '#ff6f61';
-        } else {
-            statusEl.innerText = 'Ready to start! Select or enter a topic below.';
-            statusEl.style.background = '#e0f7fa';
-            statusEl.style.color = '#0891b2';
-        }
-    }
-});
-
-customTopicInput.addEventListener('input', () => {
-    const customTopic = customTopicInput.value.trim();
-    if (customTopic) {
-        statusEl.innerText = `Custom topic: ${customTopic}. Choose number of questions!`;
-        statusEl.style.background = '#fef2f2';
-        statusEl.style.color = '#ff6f61';
-    } else {
-        statusEl.innerText = 'Enter your custom topic to start!';
-        statusEl.style.background = '#e0f7fa';
-        statusEl.style.color = '#0891b2';
-    }
-});
-
-questionNumberSelect.addEventListener('change', () => {
-    const topic = topicSelect.value === 'custom' ? customTopicInput.value.trim() : topicSelect.value;
-    const numQuestions = questionNumberSelect.value;
-    if (topic) {
-        statusEl.innerText = `Ready to generate a ${numQuestions}-question quiz on ${topic.charAt(0).toUpperCase() + topic.slice(1)}!`;
-        statusEl.style.background = '#fef2f2';
-        statusEl.style.color = '#ff6f61';
-    }
-    updateProfileDisplay();
-});
-
-generateBtn.addEventListener('click', async () => {
-    let topic = topicSelect.value;
-    if (topic === 'custom') {
-        topic = customTopicInput.value.trim();
-        if (!topic) {
-            alert('Please enter a custom topic!');
-            return;
-        }
-    }
-    if (!topic) {
-        alert('Please select a topic!');
-        return;
-    }
-    const numQuestions = parseInt(questionNumberSelect.value);
-    console.log(`Generating quiz for topic: ${topic} with ${numQuestions} questions`);
-    statusEl.innerText = `Generating a ${numQuestions}-question quiz on ${topic.charAt(0).toUpperCase() + topic.slice(1)}...`;
-    spinner.style.display = 'flex';
-    quizContainer.style.display = 'none';
-    resultEl.style.display = 'none';
-    generateBtn.disabled = true;
-    hintCount = 1;
-    fiftyFiftyCount = 1;
-    hintCountEl.innerText = hintCount;
-    fiftyFiftyCountEl.innerText = fiftyFiftyCount;
-    hintBtn.disabled = false;
-    fiftyFiftyBtn.disabled = false;
-
-    try {
-        quizData = await generateQuiz(topic, numQuestions);
-        console.log("Quiz Data Generated:", quizData);
-        userAnswers = new Array(quizData.length).fill(null);
-        currentQuestionIndex = 0;
-        statusEl.innerText = `Quiz generated! You're on Question ${currentQuestionIndex + 1}/${quizData.length}.`;
-        displayQuestion();
-        spinner.style.display = 'none';
-        quizContainer.style.display = 'block';
-        generateBtn.disabled = false;
-    } catch (error) {
-        console.error("Error generating quiz:", error);
-        spinner.style.display = 'none';
-        statusEl.innerText = 'Error generating quiz. Check your API key or internet.';
-        statusEl.style.background = '#fef2f2';
-        statusEl.style.color = '#ff6f61';
-        resultEl.innerText = 'Error generating quiz. Check your API key or internet.';
-        resultEl.style.display = 'block';
-        generateBtn.disabled = false;
-    }
-});
-
-async function generateQuiz(topic, numQuestions) {
-    const prompt = `Generate ${numQuestions} multiple-choice trivia questions on ${topic}. Each question should have 4 options (A, B, C, D), indicate the correct answer, provide a short explanation (1-2 sentences) for the correct answer, and include a hint (1 sentence). Format each question as: "Question: [question text]\nA) [option A]\nB) [option B]\nC) [option C]\nD) [option D]\nCorrect: [A/B/C/D]\nExplanation: [explanation]\nHint: [hint]"`;
-
-    console.log("Sending API request with prompt:", prompt);
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Authorization": "Bearer YOUR_API_KEY",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://chat.openrouter.ai",
-            "X-Title": "ai-quiz-generator-project"
-        },
-        body: JSON.stringify({
-            model: "mistralai/mixtral-8x7b-instruct",
-            messages: [{ role: "user", content: prompt }]
-        })
-    });
-
-    console.log("API Response Status:", response.status);
-    const data = await response.json();
-    console.log("API Response Data:", data);
-    if (!data.choices || !data.choices[0]) {
-        throw new Error('Invalid API response');
-    }
-
-    const rawQuestions = data.choices[0].message.content.split('\n\n');
-    console.log("Raw Questions:", rawQuestions);
-    const quiz = rawQuestions.map(q => {
-        const lines = q.split('\n');
-        const question = lines[0].replace('Question: ', '');
-        const options = lines.slice(1, 5);
-        const correct = lines[5].replace('Correct: ', '');
-        const explanation = lines[6].replace('Explanation: ', '');
-        const hint = lines[7].replace('Hint: ', '');
-        const correctIndex = ['A', 'B', 'C', 'D'].indexOf(correct);
-        return { question, options, correct: correctIndex, explanation, hint };
-    });
-
-    return quiz;
+.profile-setup {
+    animation: fadeIn 0.5s ease-in;
 }
 
-function startTimer() {
-    timeLeft = 15;
-    timeLeftEl.innerText = timeLeft;
-    timerEl.style.display = 'block';
-    clearInterval(timer);
-    timer = setInterval(() => {
-        timeLeft--;
-        timeLeftEl.innerText = timeLeft;
-        if (timeLeft <= 0) {
-            clearInterval(timer);
-            timerEl.style.display = 'none';
-            userAnswers[currentQuestionIndex] = null;
-            const q = quizData[currentQuestionIndex];
-            const correctLabel = optionsEl.children[q.correct];
-            correctLabel.classList.add('correct');
-            answerFeedbackEl.innerText = `Time’s up! The correct answer is ${q.options[q.correct]}.`;
-            answerFeedbackEl.classList.add('incorrect');
-            answerFeedbackEl.style.display = 'block';
-            additionalInfoEl.innerText = `Did you know? ${q.explanation}`;
-            additionalInfoEl.style.display = 'block';
-            statusEl.innerText = `Time ran out for Question ${currentQuestionIndex + 1}/${quizData.length}. Moving to next question...`;
-            statusEl.style.background = '#fee2e2';
-            statusEl.style.color = '#991b1b';
-            setTimeout(() => {
-                currentQuestionIndex++;
-                if (currentQuestionIndex < quizData.length) {
-                    statusEl.innerText = `You're on Question ${currentQuestionIndex + 1}/${quizData.length}.`;
-                    statusEl.style.background = '#e0f7fa';
-                    statusEl.style.color = '#0891b2';
-                    displayQuestion();
-                } else {
-                    showResult();
-                }
-            }, 1000);
-        }
-    }, 1000);
+.profile-title {
+    color: #00838f;
+    font-weight: 700;
+    margin-bottom: 10px;
 }
 
-function displayQuestion() {
-    const q = quizData[currentQuestionIndex];
-    console.log("Displaying Question:", q);
-    questionEl.innerText = `Question ${currentQuestionIndex + 1}: ${q.question}`;
-    optionsEl.innerHTML = '';
-    answerFeedbackEl.style.display = 'none';
-    additionalInfoEl.style.display = 'none';
-    isAnswerSelected = false;
-    q.options.forEach((option, index) => {
-        const label = document.createElement('label');
-        label.innerHTML = `<input type="radio" name="answer" value="${index}"> <span>${option}</span><br>`;
-        optionsEl.appendChild(label);
-    });
-    nextBtn.style.display = 'block';
-    nextBtn.disabled = true;
-    startTimer();
-    document.querySelectorAll('input[name="answer"]').forEach(input => {
-        input.addEventListener('change', () => {
-            if (isAnswerSelected) return;
-            isAnswerSelected = true;
-            nextBtn.disabled = false;
-            userAnswers[currentQuestionIndex] = parseInt(input.value);
-            const isCorrect = userAnswers[currentQuestionIndex] === q.correct;
-            const selectedLabel = input.parentElement;
-            const correctLabel = optionsEl.children[q.correct];
-            selectedLabel.classList.add(isCorrect ? 'correct' : 'incorrect');
-            if (!isCorrect) {
-                correctLabel.classList.add('correct');
-                answerFeedbackEl.innerText = `Oops! The correct answer is ${q.options[q.correct]}. Don’t give up—you’ve got this! 💪`;
-            } else {
-                answerFeedbackEl.innerText = '🎉 Amazing! That’s correct!';
-            }
-            answerFeedbackEl.classList.add(isCorrect ? 'correct' : 'incorrect');
-            answerFeedbackEl.style.display = 'block';
-            additionalInfoEl.innerText = `Did you know? ${q.explanation}`;
-            additionalInfoEl.style.display = 'block';
-            statusEl.innerText = `Answer selected for Question ${currentQuestionIndex + 1}/${quizData.length}. ${isCorrect ? 'Well done!' : 'Let’s try the next one!'}`;
-            statusEl.style.background = isCorrect ? '#d1fae5' : '#fee2e2';
-            statusEl.style.color = isCorrect ? '#065f46' : '#991b1b';
-            document.querySelectorAll('#options label span').forEach(span => {
-                span.style.color = '#374151';
-                span.style.fontWeight = 'normal';
-            });
-            input.nextElementSibling.style.color = isCorrect ? '#065f46' : '#991b1b';
-            input.nextElementSibling.style.fontWeight = '600';
-            clearInterval(timer);
-            timerEl.style.display = 'none';
-        });
-    });
+.profile-subtitle {
+    color: #666;
+    margin-bottom: 20px;
 }
 
-hintBtn.addEventListener('click', () => {
-    if (hintCount <= 0) return;
-    hintCount--;
-    hintCountEl.innerText = hintCount;
-    if (hintCount === 0) hintBtn.disabled = true;
-    const q = quizData[currentQuestionIndex];
-    answerFeedbackEl.innerText = `Hint: ${q.hint}`;
-    answerFeedbackEl.classList.add('correct');
-    answerFeedbackEl.style.display = 'block';
-    statusEl.innerText = `Hint used for Question ${currentQuestionIndex + 1}/${quizData.length}.`;
-    statusEl.style.background = '#e0f7fa';
-    statusEl.style.color = '#0891b2';
-});
-
-fiftyFiftyBtn.addEventListener('click', () => {
-    if (fiftyFiftyCount <= 0 || isAnswerSelected) return;
-    fiftyFiftyCount--;
-    fiftyFiftyCountEl.innerText = fiftyFiftyCount;
-    if (fiftyFiftyCount === 0) fiftyFiftyBtn.disabled = true;
-    const q = quizData[currentQuestionIndex];
-    const incorrectIndices = [...Array(4).keys()].filter(i => i !== q.correct);
-    const toHide = incorrectIndices.sort(() => Math.random() - 0.5).slice(0, 2);
-    toHide.forEach(index => {
-        optionsEl.children[index].style.display = 'none';
-    });
-    statusEl.innerText = `50/50 used for Question ${currentQuestionIndex + 1}/${quizData.length}.`;
-    statusEl.style.background = '#e0f7fa';
-    statusEl.style.color = '#0891b2';
-});
-
-function createConfetti() {
-    confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-    });
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
-nextBtn.addEventListener('click', () => {
-    setTimeout(() => {
-        currentQuestionIndex++;
-        if (currentQuestionIndex < quizData.length) {
-            statusEl.innerText = `You're on Question ${currentQuestionIndex + 1}/${quizData.length}.`;
-            statusEl.style.background = '#e0f7fa';
-            statusEl.style.color = '#0891b2';
-            displayQuestion();
-        } else {
-            showResult();
-        }
-    }, 1000);
-});
-
-// Function to award badges based on user achievements
-function awardBadges(score, totalQuestions) {
-    const badges = userProfile.badges || [];
-    const history = userProfile.quizHistory || [];
-    
-    // Badge: First Quiz Master (complete first quiz)
-    if (history.length === 0 && !badges.includes('First Quiz Master 🏆')) {
-        badges.push('First Quiz Master 🏆');
-        statusEl.innerText = `🎉 Wow, ${userProfile.name}! You earned the "First Quiz Master" badge!`;
-        statusEl.style.background = '#d1fae5';
-        statusEl.style.color = '#065f46';
-    }
-    
-    // Badge: Perfect Score Pro (get a perfect score)
-    if (score === totalQuestions && !badges.includes('Perfect Score Pro 🌟')) {
-        badges.push('Perfect Score Pro 🌟');
-        statusEl.innerText = `🌟 Amazing, ${userProfile.name}! You earned the "Perfect Score Pro" badge!`;
-        statusEl.style.background = '#d1fae5';
-        statusEl.style.color = '#065f46';
-    }
-    
-    // Badge: Streak Star (achieve a 3-day streak)
-    if (userProfile.streak >= 3 && !badges.includes('Streak Star 🔥')) {
-        badges.push('Streak Star 🔥');
-        statusEl.innerText = `🔥 Incredible, ${userProfile.name}! You earned the "Streak Star" badge for a ${userProfile.streak}-day streak!`;
-        statusEl.style.background = '#d1fae5';
-        statusEl.style.color = '#065f46';
-    }
-    
-    userProfile.badges = badges;
-    localStorage.setItem('userProfile', JSON.stringify(userProfile));
-    updateProfileDisplay();
+.profile-input, .profile-select {
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    outline: none;
+    transition: border-color 0.3s;
 }
 
-function showResult() {
-    quizContainer.style.display = 'none';
-    nextBtn.style.display = 'none';
-    timerEl.style.display = 'none';
-    let score = 0;
-    quizData.forEach((q, index) => {
-        if (userAnswers[index] === q.correct) score++;
-    });
-    const percentage = (score / quizData.length) * 100;
-    userProfile.quizHistory.push({ 
-        score: percentage, 
-        topic: topicSelect.value === 'custom' ? customTopicInput.value : topicSelect.value, 
-        date: new Date().toISOString() 
-    });
-    userProfile.lastQuizDate = new Date().toDateString();
-    if (score > userProfile.highScore) {
-        userProfile.highScore = score;
-    }
-    
-    // Award badges based on performance
-    awardBadges(score, quizData.length);
-    
-    localStorage.setItem('userProfile', JSON.stringify(userProfile));
-    updateProfileDisplay();
-    
-    // Personalized encouragement message
-    let resultMessage = `You scored ${score}/${quizData.length}, ${userProfile.name}! `;
-    let encouragementMessage = '';
-    if (score === quizData.length) {
-        resultMessage += 'Perfect score! You’re a trivia master! 🏆';
-        encouragementMessage = `Wow, ${userProfile.name}, you’re unstoppable! Come back tomorrow to keep your streak alive and earn more badges! 🌟`;
-        createConfetti();
-    } else if (score >= Math.floor(quizData.length * 0.6)) {
-        resultMessage += 'Great job! You’re on fire! 🔥';
-        encouragementMessage = `Nice work, ${userProfile.name}! You’re getting better every time—try again tomorrow to beat your high score! 🚀`;
-    } else {
-        resultMessage += 'Nice try! Keep practicing to become a trivia champ! 💪';
-        encouragementMessage = `Don’t worry, ${userProfile.name}! Every quiz makes you stronger—come back tomorrow for a fresh challenge! 🌈`;
-    }
-    
-    // Shareable result
-    const topic = topicSelect.value === 'custom' ? customTopicInput.value : topicSelect.value;
-    const shareText = `I scored ${score}/${quizData.length} on a ${topic} quiz in AI Quiz Generator! Can you beat me? 🚀 Play now: https://github.com/YOUR_USERNAME/ai-quiz-generator`;
-    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
-    
-    resultEl.innerHTML = `${resultMessage}<br><p>${encouragementMessage}</p><br>` +
-        `<button id="shareResult" class="btn btn-share">Share Your Score</button><br>` +
-        `<button id="playAgain" class="btn">Play Again</button>`;
-    resultEl.style.display = 'block';
-    statusEl.innerText = `Quiz completed! Your score: ${score}/${quizData.length}. ${encouragementMessage}`;
-    statusEl.style.background = score === quizData.length ? '#d1fae5' : '#fef2f2';
-    statusEl.style.color = score === quizData.length ? '#065f46' : '#ff6f61';
-    
-    document.getElementById('shareResult').addEventListener('click', () => {
-        window.open(shareUrl, '_blank');
-    });
-    
-    document.getElementById('playAgain').addEventListener('click', () => {
-        quizContainer.style.display = 'none';
-        resultEl.style.display = 'none';
-        timerEl.style.display = 'none';
-        topicSelect.value = userProfile.preferredTopic || '';
-        customTopicInput.style.display = 'none';
-        customTopicInput.value = '';
-        questionNumberSelect.value = '5';
-        statusEl.innerText = 'Ready to start! Select or enter a topic below.';
-        statusEl.style.background = '#e0f7fa';
-        statusEl.style.color = '#0891b2';
-    });
+.profile-input:focus, .profile-select:focus {
+    border-color: #00838f;
+}
+
+.title {
+    color: #00838f;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.profile-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.stats-text {
+    color: #333;
+    font-size: 16px;
+}
+
+.badges {
+    margin: 10px 0;
+    font-size: 14px;
+    color: #00838f;
+}
+
+.badge {
+    display: inline-block;
+    background: #e0f7fa;
+    padding: 5px 10px;
+    margin: 5px;
+    border-radius: 15px;
+    font-weight: 600;
+    color: #00838f;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.status {
+    padding: 10px;
+    border-radius: 8px;
+    font-style: italic;
+    margin-bottom: 20px;
+    transition: background 0.3s, color 0.3s;
+}
+
+.topic-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.topic-select, .custom-topic-input, .question-number-select {
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.topic-select:focus, .custom-topic-input:focus, .question-number-select:focus {
+    border-color: #00838f;
+}
+
+.question-number-container {
+    margin-bottom: 20px;
+}
+
+.question-number-label {
+    color: #333;
+    margin-right: 10px;
+    font-size: 16px;
+}
+
+.btn {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    background: #00838f;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.1s;
+}
+
+.btn:hover {
+    background: #006064;
+    transform: scale(1.05);
+}
+
+.btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-small {
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.btn-lifeline {
+    padding: 8px 16px;
+    font-size: 14px;
+    background: #ff9800;
+    margin: 0 5px;
+}
+
+.btn-lifeline:disabled {
+    background: #ccc;
+}
+
+.btn-next {
+    margin-top: 20px;
+}
+
+.btn-share {
+    background: #1DA1F2;
+    margin: 10px 0;
+}
+
+.quiz-frame {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 10px;
+    background: #f9f9f9;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+}
+
+.question-text {
+    color: #00838f;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.timer {
+    font-size: 16px;
+    color: #d32f2f;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+#timeLeft {
+    color: #d32f2f;
+}
+
+.lifelines {
+    margin-bottom: 15px;
+}
+
+.options-grid {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.options-grid label {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.3s, background 0.3s;
+}
+
+.options-grid label:hover {
+    border-color: #00838f;
+}
+
+.options-grid input[type="radio"] {
+    margin-right: 10px;
+}
+
+.options-grid .correct {
+    background: #e8f5e9;
+    border-color: #4caf50;
+}
+
+.options-grid .incorrect {
+    background: #ffebee;
+    border-color: #f44336;
+}
+
+.answer-feedback {
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.answer-feedback.correct {
+    color: #4caf50;
+}
+
+.answer-feedback.incorrect {
+    color: #f44336;
+}
+
+.additional-info {
+    font-style: italic;
+    color: #666;
+    margin-top: 10px;
+}
+
+.result-box {
+    margin-top: 20px;
+    padding: 20px;
+    background: #e0f7fa;
+    border-radius: 10px;
+    font-size: 18px;
+    color: #00838f;
+}
+
+.spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.loader {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #00838f;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
