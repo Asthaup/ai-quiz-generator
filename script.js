@@ -6,11 +6,13 @@ const userNameInput = document.getElementById('userName');
 const preferredTopicSelect = document.getElementById('preferredTopic');
 const userGreeting = document.getElementById('userGreeting');
 const userStats = document.getElementById('userStats');
-const badgesEl = document.getElementById('badges'); // New element for badges
+const badgesEl = document.getElementById('badges');
 const generateBtn = document.getElementById('generateBtn');
 const topicSelect = document.getElementById('topic');
 const customTopicInput = document.getElementById('customTopic');
 const questionNumberSelect = document.getElementById('questionNumber');
+const timerDurationSelect = document.getElementById('timerDuration');
+const timerToggle = document.getElementById('timerToggle');
 const quizContainer = document.getElementById('quizContainer');
 const questionEl = document.getElementById('question');
 const timerEl = document.getElementById('timer');
@@ -38,11 +40,11 @@ let hintCount = 1;
 let fiftyFiftyCount = 1;
 let userProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
 
-// Initialize app state based on profile
 if (userProfile.name) {
     profileSetup.style.display = 'none';
     mainContent.style.display = 'block';
     updateProfileDisplay();
+    loadTimerSettings();
 }
 
 saveProfileBtn.addEventListener('click', () => {
@@ -58,13 +60,16 @@ saveProfileBtn.addEventListener('click', () => {
         quizHistory: userProfile.quizHistory || [], 
         streak: userProfile.streak || 0, 
         highScore: userProfile.highScore || 0,
-        badges: userProfile.badges || [], // Initialize badges array
-        lastQuizDate: userProfile.lastQuizDate || null 
+        badges: userProfile.badges || [],
+        lastQuizDate: userProfile.lastQuizDate || null,
+        timerDuration: userProfile.timerDuration || 15,
+        timerEnabled: userProfile.timerEnabled !== undefined ? userProfile.timerEnabled : true
     };
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
     profileSetup.style.display = 'none';
     mainContent.style.display = 'block';
     updateProfileDisplay();
+    loadTimerSettings();
 });
 
 editProfileBtn.addEventListener('click', () => {
@@ -72,6 +77,21 @@ editProfileBtn.addEventListener('click', () => {
     profileSetup.style.display = 'block';
     userNameInput.value = userProfile.name;
     preferredTopicSelect.value = userProfile.preferredTopic || '';
+});
+
+function loadTimerSettings() {
+    timerDurationSelect.value = userProfile.timerDuration || 15;
+    timerToggle.checked = userProfile.timerEnabled !== undefined ? userProfile.timerEnabled : true;
+}
+
+timerDurationSelect.addEventListener('change', () => {
+    userProfile.timerDuration = parseInt(timerDurationSelect.value);
+    localStorage.setItem('userProfile', JSON.stringify(userProfile));
+});
+
+timerToggle.addEventListener('change', () => {
+    userProfile.timerEnabled = timerToggle.checked;
+    localStorage.setItem('userProfile', JSON.stringify(userProfile));
 });
 
 function updateProfileDisplay() {
@@ -94,7 +114,6 @@ function updateProfileDisplay() {
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
     userStats.innerText = `Quizzes Taken: ${totalQuizzes} | Avg Score: ${averageScore}% | High Score: ${userProfile.highScore}/${questionNumberSelect.value} | Streak: ${streak} day${streak !== 1 ? 's' : ''}`;
     
-    // Display badges
     badgesEl.innerHTML = '<strong>Achievements:</strong> ';
     if (userProfile.badges && userProfile.badges.length > 0) {
         badgesEl.innerHTML += userProfile.badges.map(badge => `<span class="badge">${badge}</span>`).join(' ');
@@ -104,8 +123,7 @@ function updateProfileDisplay() {
 
     if (topicSelect.value) {
         statusEl.innerText = `Topic selected: ${topicSelect.value.charAt(0).toUpperCase() + topicSelect.value.slice(1)}. Choose number of questions!`;
-        statusEl.style.background = '#fef2f2';
-        statusEl.style.color = '#ff6f61';
+        statusEl.className = 'status topic-selected';
     }
 }
 
@@ -115,19 +133,16 @@ topicSelect.addEventListener('change', () => {
         customTopicInput.style.display = 'block';
         customTopicInput.focus();
         statusEl.innerText = 'Enter your custom topic to start!';
-        statusEl.style.background = '#e0f7fa';
-        statusEl.style.color = '#0891b2';
+        statusEl.className = 'status';
     } else {
         customTopicInput.style.display = 'none';
         customTopicInput.value = '';
         if (topic) {
             statusEl.innerText = `Topic selected: ${topic.charAt(0).toUpperCase() + topic.slice(1)}. Choose number of questions!`;
-            statusEl.style.background = '#fef2f2';
-            statusEl.style.color = '#ff6f61';
+            statusEl.className = 'status topic-selected';
         } else {
             statusEl.innerText = 'Ready to start! Select or enter a topic below.';
-            statusEl.style.background = '#e0f7fa';
-            statusEl.style.color = '#0891b2';
+            statusEl.className = 'status';
         }
     }
 });
@@ -136,12 +151,10 @@ customTopicInput.addEventListener('input', () => {
     const customTopic = customTopicInput.value.trim();
     if (customTopic) {
         statusEl.innerText = `Custom topic: ${customTopic}. Choose number of questions!`;
-        statusEl.style.background = '#fef2f2';
-        statusEl.style.color = '#ff6f61';
+        statusEl.className = 'status topic-selected';
     } else {
         statusEl.innerText = 'Enter your custom topic to start!';
-        statusEl.style.background = '#e0f7fa';
-        statusEl.style.color = '#0891b2';
+        statusEl.className = 'status';
     }
 });
 
@@ -150,8 +163,7 @@ questionNumberSelect.addEventListener('change', () => {
     const numQuestions = questionNumberSelect.value;
     if (topic) {
         statusEl.innerText = `Ready to generate a ${numQuestions}-question quiz on ${topic.charAt(0).toUpperCase() + topic.slice(1)}!`;
-        statusEl.style.background = '#fef2f2';
-        statusEl.style.color = '#ff6f61';
+        statusEl.className = 'status topic-selected';
     }
     updateProfileDisplay();
 });
@@ -172,6 +184,7 @@ generateBtn.addEventListener('click', async () => {
     const numQuestions = parseInt(questionNumberSelect.value);
     console.log(`Generating quiz for topic: ${topic} with ${numQuestions} questions`);
     statusEl.innerText = `Generating a ${numQuestions}-question quiz on ${topic.charAt(0).toUpperCase() + topic.slice(1)}...`;
+    statusEl.className = 'status topic-selected';
     spinner.style.display = 'flex';
     quizContainer.style.display = 'none';
     resultEl.style.display = 'none';
@@ -189,6 +202,7 @@ generateBtn.addEventListener('click', async () => {
         userAnswers = new Array(quizData.length).fill(null);
         currentQuestionIndex = 0;
         statusEl.innerText = `Quiz generated! You're on Question ${currentQuestionIndex + 1}/${quizData.length}.`;
+        statusEl.className = 'status';
         displayQuestion();
         spinner.style.display = 'none';
         quizContainer.style.display = 'block';
@@ -197,8 +211,7 @@ generateBtn.addEventListener('click', async () => {
         console.error("Error generating quiz:", error);
         spinner.style.display = 'none';
         statusEl.innerText = 'Error generating quiz. Check your API key or internet.';
-        statusEl.style.background = '#fef2f2';
-        statusEl.style.color = '#ff6f61';
+        statusEl.className = 'status incorrect';
         resultEl.innerText = 'Error generating quiz. Check your API key or internet.';
         resultEl.style.display = 'block';
         generateBtn.disabled = false;
@@ -247,7 +260,11 @@ async function generateQuiz(topic, numQuestions) {
 }
 
 function startTimer() {
-    timeLeft = 15;
+    if (!userProfile.timerEnabled) {
+        timerEl.style.display = 'none';
+        return;
+    }
+    timeLeft = userProfile.timerDuration || 15;
     timeLeftEl.innerText = timeLeft;
     timerEl.style.display = 'block';
     clearInterval(timer);
@@ -267,14 +284,12 @@ function startTimer() {
             additionalInfoEl.innerText = `Did you know? ${q.explanation}`;
             additionalInfoEl.style.display = 'block';
             statusEl.innerText = `Time ran out for Question ${currentQuestionIndex + 1}/${quizData.length}. Moving to next question...`;
-            statusEl.style.background = '#fee2e2';
-            statusEl.style.color = '#991b1b';
+            statusEl.className = 'status incorrect';
             setTimeout(() => {
                 currentQuestionIndex++;
                 if (currentQuestionIndex < quizData.length) {
                     statusEl.innerText = `You're on Question ${currentQuestionIndex + 1}/${quizData.length}.`;
-                    statusEl.style.background = '#e0f7fa';
-                    statusEl.style.color = '#0891b2';
+                    statusEl.className = 'status';
                     displayQuestion();
                 } else {
                     showResult();
@@ -321,13 +336,12 @@ function displayQuestion() {
             additionalInfoEl.innerText = `Did you know? ${q.explanation}`;
             additionalInfoEl.style.display = 'block';
             statusEl.innerText = `Answer selected for Question ${currentQuestionIndex + 1}/${quizData.length}. ${isCorrect ? 'Well done!' : 'Let’s try the next one!'}`;
-            statusEl.style.background = isCorrect ? '#d1fae5' : '#fee2e2';
-            statusEl.style.color = isCorrect ? '#065f46' : '#991b1b';
+            statusEl.className = `status ${isCorrect ? 'correct' : 'incorrect'}`;
             document.querySelectorAll('#options label span').forEach(span => {
                 span.style.color = '#374151';
                 span.style.fontWeight = 'normal';
             });
-            input.nextElementSibling.style.color = isCorrect ? '#065f46' : '#991b1b';
+            input.nextElementSibling.style.color = isCorrect ? '#34c759' : '#ff4d4f';
             input.nextElementSibling.style.fontWeight = '600';
             clearInterval(timer);
             timerEl.style.display = 'none';
@@ -345,8 +359,7 @@ hintBtn.addEventListener('click', () => {
     answerFeedbackEl.classList.add('correct');
     answerFeedbackEl.style.display = 'block';
     statusEl.innerText = `Hint used for Question ${currentQuestionIndex + 1}/${quizData.length}.`;
-    statusEl.style.background = '#e0f7fa';
-    statusEl.style.color = '#0891b2';
+    statusEl.className = 'status';
 });
 
 fiftyFiftyBtn.addEventListener('click', () => {
@@ -361,8 +374,7 @@ fiftyFiftyBtn.addEventListener('click', () => {
         optionsEl.children[index].style.display = 'none';
     });
     statusEl.innerText = `50/50 used for Question ${currentQuestionIndex + 1}/${quizData.length}.`;
-    statusEl.style.background = '#e0f7fa';
-    statusEl.style.color = '#0891b2';
+    statusEl.className = 'status';
 });
 
 function createConfetti() {
@@ -378,8 +390,7 @@ nextBtn.addEventListener('click', () => {
         currentQuestionIndex++;
         if (currentQuestionIndex < quizData.length) {
             statusEl.innerText = `You're on Question ${currentQuestionIndex + 1}/${quizData.length}.`;
-            statusEl.style.background = '#e0f7fa';
-            statusEl.style.color = '#0891b2';
+            statusEl.className = 'status';
             displayQuestion();
         } else {
             showResult();
@@ -387,33 +398,26 @@ nextBtn.addEventListener('click', () => {
     }, 1000);
 });
 
-// Function to award badges based on user achievements
 function awardBadges(score, totalQuestions) {
     const badges = userProfile.badges || [];
     const history = userProfile.quizHistory || [];
     
-    // Badge: First Quiz Master (complete first quiz)
     if (history.length === 0 && !badges.includes('First Quiz Master 🏆')) {
         badges.push('First Quiz Master 🏆');
         statusEl.innerText = `🎉 Wow, ${userProfile.name}! You earned the "First Quiz Master" badge!`;
-        statusEl.style.background = '#d1fae5';
-        statusEl.style.color = '#065f46';
+        statusEl.className = 'status correct';
     }
     
-    // Badge: Perfect Score Pro (get a perfect score)
     if (score === totalQuestions && !badges.includes('Perfect Score Pro 🌟')) {
         badges.push('Perfect Score Pro 🌟');
         statusEl.innerText = `🌟 Amazing, ${userProfile.name}! You earned the "Perfect Score Pro" badge!`;
-        statusEl.style.background = '#d1fae5';
-        statusEl.style.color = '#065f46';
+        statusEl.className = 'status correct';
     }
     
-    // Badge: Streak Star (achieve a 3-day streak)
     if (userProfile.streak >= 3 && !badges.includes('Streak Star 🔥')) {
         badges.push('Streak Star 🔥');
         statusEl.innerText = `🔥 Incredible, ${userProfile.name}! You earned the "Streak Star" badge for a ${userProfile.streak}-day streak!`;
-        statusEl.style.background = '#d1fae5';
-        statusEl.style.color = '#065f46';
+        statusEl.className = 'status correct';
     }
     
     userProfile.badges = badges;
@@ -430,23 +434,12 @@ function showResult() {
         if (userAnswers[index] === q.correct) score++;
     });
     const percentage = (score / quizData.length) * 100;
-    userProfile.quizHistory.push({ 
+    const currentQuiz = { 
         score: percentage, 
         topic: topicSelect.value === 'custom' ? customTopicInput.value : topicSelect.value, 
         date: new Date().toISOString() 
-    });
-    userProfile.lastQuizDate = new Date().toDateString();
-    if (score > userProfile.highScore) {
-        userProfile.highScore = score;
-    }
-    
-    // Award badges based on performance
-    awardBadges(score, quizData.length);
-    
-    localStorage.setItem('userProfile', JSON.stringify(userProfile));
-    updateProfileDisplay();
-    
-    // Personalized encouragement message
+    };
+
     let resultMessage = `You scored ${score}/${quizData.length}, ${userProfile.name}! `;
     let encouragementMessage = '';
     if (score === quizData.length) {
@@ -461,18 +454,40 @@ function showResult() {
         encouragementMessage = `Don’t worry, ${userProfile.name}! Every quiz makes you stronger—come back tomorrow for a fresh challenge! 🌈`;
     }
     
-    // Shareable result
     const topic = topicSelect.value === 'custom' ? customTopicInput.value : topicSelect.value;
     const shareText = `I scored ${score}/${quizData.length} on a ${topic} quiz in AI Quiz Generator! Can you beat me? 🚀 Play now: https://github.com/YOUR_USERNAME/ai-quiz-generator`;
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
     
     resultEl.innerHTML = `${resultMessage}<br><p>${encouragementMessage}</p><br>` +
+        `<button id="saveScore" class="btn btn-save">Save Score</button>` +
+        `<button id="removeScore" class="btn btn-remove">Remove Score</button><br>` +
         `<button id="shareResult" class="btn btn-share">Share Your Score</button><br>` +
         `<button id="playAgain" class="btn">Play Again</button>`;
     resultEl.style.display = 'block';
     statusEl.innerText = `Quiz completed! Your score: ${score}/${quizData.length}. ${encouragementMessage}`;
-    statusEl.style.background = score === quizData.length ? '#d1fae5' : '#fef2f2';
-    statusEl.style.color = score === quizData.length ? '#065f46' : '#ff6f61';
+    statusEl.className = `status ${score === quizData.length ? 'correct' : 'topic-selected'}`;
+    
+    document.getElementById('saveScore').addEventListener('click', () => {
+        userProfile.quizHistory.push(currentQuiz);
+        userProfile.lastQuizDate = new Date().toDateString();
+        if (score > userProfile.highScore) {
+            userProfile.highScore = score;
+        }
+        awardBadges(score, quizData.length);
+        localStorage.setItem('userProfile', JSON.stringify(userProfile));
+        updateProfileDisplay();
+        statusEl.innerText = `Score saved! ${encouragementMessage}`;
+        statusEl.className = 'status correct';
+        document.getElementById('saveScore').disabled = true;
+        document.getElementById('removeScore').disabled = true;
+    });
+
+    document.getElementById('removeScore').addEventListener('click', () => {
+        statusEl.innerText = `Score removed. ${encouragementMessage}`;
+        statusEl.className = 'status topic-selected';
+        document.getElementById('saveScore').disabled = true;
+        document.getElementById('removeScore').disabled = true;
+    });
     
     document.getElementById('shareResult').addEventListener('click', () => {
         window.open(shareUrl, '_blank');
@@ -487,7 +502,6 @@ function showResult() {
         customTopicInput.value = '';
         questionNumberSelect.value = '5';
         statusEl.innerText = 'Ready to start! Select or enter a topic below.';
-        statusEl.style.background = '#e0f7fa';
-        statusEl.style.color = '#0891b2';
+        statusEl.className = 'status';
     });
 }
