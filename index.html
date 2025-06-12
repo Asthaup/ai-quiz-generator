@@ -75,6 +75,18 @@
                     <option value="10">10</option>
                 </select>
             </div>
+            <div class="timer-settings-container">
+                <label for="timerDuration" class="timer-settings-label">Timer Duration (seconds):</label>
+                <select id="timerDuration" class="timer-settings-select">
+                    <option value="10">10</option>
+                    <option value="15" selected>15</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                </select>
+                <label class="timer-toggle-label">
+                    <input type="checkbox" id="timerToggle" checked> Timer On
+                </label>
+            </div>
             <button id="generateBtn" class="btn">Generate Quiz</button>
             <div id="quizContainer" class="quiz-frame" style="display: none;">
                 <h2 id="question" class="question-text"></h2>
