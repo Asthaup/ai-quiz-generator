@@ -242,9 +242,11 @@ Repeat for quiz-in-progress.png and results-screen.png.
 
 Update the README.md:
 
-Edit README.md and replace the placeholder image links with the actual paths:![Profile Setup](screenshots/profile-setup.png)
-![Quiz in Progress](screenshots/quiz-in-progress.png)
-![Results Screen](screenshots/results-screen.png)
+Edit README.md and replace the placeholder image links with the actual paths:![Profile Setup]![Profile setup- 1](https://github.com/user-attachments/assets/510d5a18-51c4-46f5-902b-bf9b4427314f)
+
+![Quiz in Progress]![quiz-in-progress- 1](https://github.com/user-attachments/assets/d0e96438-df34-47af-a4a7-5946b6ba0b52)
+
+![Results Screen]![results-screen](https://github.com/user-attachments/assets/c1dc58f1-4509-48ed-8f44-7c07e1d2b318)
 
 
 Commit the changes with a message like Update README with screenshot links.
